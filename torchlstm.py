@@ -22,6 +22,8 @@ from torch.utils.data import Dataset, DataLoader
 from torch.nn import functional as F
 from torchvision import datasets, models, transforms
 
+
+
 # Load Data 
 df_train = pd.read_csv("/home/safe/Documentos/Evoai/Projetos/Cripto/input/g-research-crypto-forecasting/train.csv")
 df_train.dropna(axis = 0, inplace = True)
@@ -169,26 +171,26 @@ def training(model, epochs, validate_every=2):
 
   for epoch in tqdm(range(epochs)):
 
-    # Initialize hidden and cell states with dimension:
+    # Initializando hidden e cell states com a dimensão:
     # (num_layers * num_directions, batch, hidden_size)
     states = model.init_hidden_states(BATCH_SIZE)
     running_training_loss = 0.0
 
-    # Begin training
+    # Começando o treinamento
     for idx, (x_batch, y_batch) in enumerate(training_dl):
       # Convert to Tensors
       x_batch = x_batch.float().to(device)
       y_batch = y_batch.float().to(device)
       
-      # Truncated Backpropagation
+      # Truncando Backpropagation
       states = [state.detach() for state in states]          
 
       optimizer.zero_grad()
 
-      # Make prediction
+      # Fazendo Previsão
       output, states = model(x_batch, states)
 
-      # Calculate loss
+      # Calculando loss
       loss = criterion(output[:, -1, :], y_batch)
       loss.backward()
       running_training_loss += loss.item()
@@ -196,12 +198,12 @@ def training(model, epochs, validate_every=2):
       torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
       optimizer.step()
         
-    # Average loss across timesteps
+    # Media do loss across timesteps
     training_losses.append(running_training_loss / len(training_dl))
         
     if epoch % validate_every == 0:
 
-      # Set to eval mode
+      # Ajustando o evaluation mode
       model.eval()
 
       validation_states = model.init_hidden_states(BATCH_SIZE)
@@ -209,7 +211,7 @@ def training(model, epochs, validate_every=2):
 
       for idx, (x_batch, y_batch) in enumerate(validation_dl):
 
-        # Convert to Tensors
+        # Convertendo para Tensores
         x_batch = x_batch.float().to(device)
         y_batch = y_batch.float().to(device)
       
@@ -219,7 +221,8 @@ def training(model, epochs, validate_every=2):
         running_validation_loss += validation_loss.item()
         
     validation_losses.append(running_validation_loss / len(validation_dl))
-    # Reset to training mode
+
+    # Reset para treinar novamente
     model.train()
 
     is_best = running_validation_loss / len(validation_dl) < min_validation_loss
@@ -229,7 +232,7 @@ def training(model, epochs, validate_every=2):
       save_checkpoint(epoch + 1, min_validation_loss, model.state_dict(), optimizer.state_dict())
         
 
-  # Visualize loss
+  # Visualizar o loss
   epoch_count = range(1, len(training_losses) + 1)
   plt.plot(epoch_count, training_losses, 'r--')
   plt.legend(['Training Loss'])
